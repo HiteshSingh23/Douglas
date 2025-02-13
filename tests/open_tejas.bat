@@ -1,0 +1,1 @@
+start "Open SPIDA" /D"C:\Program Files\Bentley\SPIDA" "calc.exe"
