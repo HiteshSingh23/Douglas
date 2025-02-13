@@ -12,8 +12,6 @@ class Perfum(BasePage):
     ACCEPT_BUTTON_SELECTOR = "[data-testid='uc-accept-all-button']"
     PERFUME_LOCATOR = (By.XPATH, "//li[@aria-label='PARFUM']")
     OPEN_DROPDOWN = (By.XPATH, "//div[@class='facet__title' and contains(text(),'Aktionen')]")
-    DROPDOWN_LOCATOR = (By.CLASS_NAME, "facet__title")  # The parent container of the dropdown
-    DROPDOWN_OPTION_LOCATOR = (By.CLASS_NAME, "rc-scrollbars-view")  # Individual options inside the dropdown
 
     def load_url(self):
         self.browser.get(variables.url)
@@ -29,30 +27,28 @@ class Perfum(BasePage):
 
     def apply_filters(self, file_path, column_name):
         # Read filter values from Excel
-
-
         filter_values = read_xlsx_column_by_name(file_path, column_name)
 
         for filter_text in filter_values:
             # Open the dropdown for each filter value
             self.click(self.OPEN_DROPDOWN)
-            time.sleep(5)
+            time.sleep(2)
 
-            # Find all filter options in the dropdown
-            options = self.browser.find_elements(*self.DROPDOWN_OPTION_LOCATOR)
+            try:
+                # Dynamically generate XPath with the filter value
+                dynamic_xpath = f"//div[@class='facet-option__label']/div[contains(text(),'{filter_text.strip()}')]"
 
-            for option in options:
-                option_text_element = option.find_element(By.XPATH, "//div[@class='facet-option__label']/div")
-                option_text = option_text_element.text.strip()
+                # Wait for the element to appear
+                filter_element = WebDriverWait(self.browser, 10).until(
+                    EC.presence_of_element_located((By.XPATH, dynamic_xpath))
+                )
 
-                if option_text == filter_text.strip():
-                    # Scroll the option into view
-                    self.browser.execute_script("arguments[0].scrollIntoView(true);", option_text_element)
-                    time.sleep(1)  # Allow scrolling to complete
+                # Scroll the element into view
+                self.browser.execute_script("arguments[0].scrollIntoView(true);", filter_element)
+                time.sleep(1)  # Allow scrolling to complete
 
-                    # Click the option
-                    option_text_element.click()
-                    time.sleep(12)  # Wait for the action to complete
-                    break
-                else:
-                    print(f"Filter '{filter_text}' not found in the dropdown.")
+                # Click the filter element
+                filter_element.click()
+                time.sleep(10)  # Allow the filter to be applied
+            except Exception as e:
+                print(f"Filter '{filter_text}' not found or could not be clicked. Error: {e}")
